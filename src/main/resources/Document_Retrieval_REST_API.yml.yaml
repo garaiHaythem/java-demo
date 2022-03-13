@@ -1,0 +1,285 @@
+openapi: 3.0.1
+info:
+  title: Document Retrieval REST API
+  description: REST API exposed by IMX to Extrenal Systems.
+  version: 1.0.0
+externalDocs:
+  description: Technical specification
+  url: http://<host><port>/lbp_api
+servers:
+- url: http://<host><port>/lbp_api
+tags:
+- name: documents
+  description: create/update external documents in IMX dataframe
+paths:
+  /documents:
+    post:
+      tags:
+      - documents
+      summary: Créer un document externe dans la base IMX 
+      description: "Initial service id: std_doc_post"
+      requestBody:
+        description: Object documentaire à insérer dans la base iMX
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Document'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        405:
+          description: Invalid input
+          content: {}
+  /documents/{docId}:
+    put:
+      tags:
+      - documents
+      summary: Mettre à jour un document externe dans la base IMX
+      description: "Initial service id: std_doc_post"
+      operationId: "PUT on /documents"
+      parameters:
+      - name: docId
+        in: path
+        description: ID externe qui alimente l'instance du document
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: Mettre à jour un document externe dans la base IMX
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUpdate'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        400:
+          description:
+            Authentification not allowed
+          content:
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/exceptionFrame"
+              encoding:
+                historyMetadata:
+                  contentType: application/json; charset=utf-8
+        404:
+          description:
+            Not found
+          content:
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/exceptionFrame"
+              encoding:
+                historyMetadata:
+                  contentType: application/json; charset=utf-8
+        405:
+          description: 
+            Missing parameters
+          content:
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/exceptionFrame"
+              encoding:
+                historyMetadata:
+                  contentType: application/json; charset=utf-8
+      security:
+        - sessionKey: []
+components:
+  schemas:
+    exceptionFrame:
+      properties:
+        error:
+          type: string
+          example: "#associated error#"
+          description: The error description.
+    Document:
+      type: object
+      required:
+      - docId
+      - type
+      - data
+      properties:
+        docId:
+          type: integer
+          description: ID externe qui alimente l’élément de type pièce jointe se rattachant à une pièce fonctionnelle dans IMX 
+          example: 'kycpid'
+        imxReference:
+          type: integer
+          description: ID externe qui alimente l'instance du document
+          example: 123456
+        file:
+          type: string
+          format: binary
+          description: >
+            Décodage du document de Base64,
+            lien effectué vers le répertoire de dépôt de fichier 
+            (pour type=’pr’ avec nom de la pièce fonctionnelle dans IMX = ’refpiece’)
+          example: '#TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz#'
+        type:
+          type: string
+          description: >
+            Le code typologique documentaire 
+            (conditionne selon une business rule les type de data attendus par le service). 
+            La liste n'est pas figée à ce jour.
+            Information pivot technico-fonctionelle de premier niveau 
+            permettant de faire le lien avec le dossier dans IMX 
+            dans lequel le document est alimenté
+          enum:
+            - type_1
+            - type_2
+          example: 'foo'
+        data:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/DocType'
+    DocumentUpdate:
+      type: object
+      required:
+      - imxReference
+      - type
+      - data
+      properties:
+        imxReference:
+          type: integer
+          description: ID externe qui alimente l'instance du document
+          example: 123456
+        type:
+          type: string
+          description: >
+            Le code typologique documentaire 
+            (conditionne selon une business rule les type de data attendus par le service). 
+            La liste n'est pas figée à ce jour.
+            Information pivot technico-fonctionelle de premier niveau 
+            permettant de faire le lien avec le dossier dans IMX 
+            dans lequel le document est alimenté
+          enum:
+            - type_1
+            - type_2
+          example: 'foo'
+        data:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/DocType'
+    DocType:
+      type: object
+      properties: 
+        contractRef:
+          type: integer
+          description: contractRef [Numéro de contrat IMX]
+          example: '123456'
+        porspectId:
+          type: string
+          description: prospectId [Numéro 'externe' du prospect]
+          example: 'PR12345'
+        finElem:
+          type: string
+          description: finElem [Identifiant de l'element financier]
+          example: 'INV12345'
+        debtorId:
+          type: string
+          description: debtorId [No acheteur]
+          example: 'DB54321'
+        debtorIban:
+          type: string
+          description: debtorIban [RIB acheteur]
+          example: 'FR1420041010050500013M02606'
+        dueDate:
+          type: string
+          description: dueDate  [ISO 8601 standard] 
+          example: 2019-04-23T18:25:43.511Z
+        netAmount:
+          type: string
+          format: N(5,2)
+          description: netAmount [Montant TTC]
+          example: '10000,50'
+        docType:
+          type: string
+          description: docType [Type de document]
+          example: 'Document lambda'
+        docCreationDate:
+          type: string
+          description: docCreationDate [ISO 8601 standard]
+          example: 2019-04-23T18:25:43.511Z
+        chequeNumber:
+          type: string
+          description: chequeNumber [Numéro chèque]
+          example: '1234567'
+        interbankNb:
+          type: string
+          description: interbankNb [Zone Interbancaire]
+          example: '123456789012'
+        internNb:
+          type: string
+          description: internNb [Zone_Interne]
+          example: '123456'
+        key:
+          type: string
+          description: key [Clef]
+          example: '12'
+        benefPresence:
+          type: boolean
+          description: benefPresence[Bénéficiaire_Présent]
+          example: true
+        paymtMethodConformity:
+          type: boolean
+          description: paymtMethodConformity [Moyen de paiement conforme]
+          example: true
+        clientVatNb:
+          type: string
+          description: clientVatNb [Numéro TVA Client]
+          example: 'FRXX999999999'
+        collabProcessingDt:
+          type: string
+          description: collabProcessingDt [Date_de_traitement_collaboratif]
+          example: 2019-04-23T18:25:43.511Z
+        anomaly:
+          type: string
+          description: anomaly 
+          example: foo
+        issuerName:
+          type: string
+          description: issuerName [Nom du tiré]
+          example: Banque lamda
+        signaturePresence:
+          type: boolean
+          description: signaturePresence
+          example: true
+        issuerRef:
+          type: string
+          description: issuerRef [Réf Tiré]
+          example: '789456'
+        issuerPC:
+          type: string
+          description: issuerPC [CP Tiré]
+          example: 97132
+        billsOfExchange:
+          type: string
+          description: billsOfExchange [LCR/BO]
+          example: foo
+        complexity:
+          type: string
+          description: complexity
+          example: foo
+        recoNb:
+          type: string
+          description: recoNb [NUM_RECO]
+          example: foo
+        signatory:
+          type: string
+          description: signatory
+          example: foo
+  securitySchemes:
+    sessionKey:
+      type: apiKey
+      in: header
+      name: Session Key
